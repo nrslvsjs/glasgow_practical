@@ -1,0 +1,179 @@
+---
+title: "10_correlations"
+author: "Nick Schultz"
+date: "3/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(broom)
+library(Hmisc)
+```
+#### Read the data
+```{r}
+mh <- read_csv("MillerHadenData.csv")
+```
+#### Look at the data
+```{r}
+glimpse(mh)
+head(mh)
+tail(mh)
+mh
+```
+#### Assumptions:  
+* Is data interval/ratio/ordinal?  
+* Is there a data point for each participant on both variables?  
+* Is data normally distributed?  
+* Does the realationship appear linear?  
+* Does the spread have homoscedasticity?  
+
+Spearman correlation is non-parametric and can run with interval/ordinal/ratio data.
+
+```{r}
+is.na(mh)
+
+ggplot(mh, aes(Abil)) +
+  geom_histogram(bins = 30)
+
+ggplot(mh, aes(IQ)) +
+  geom_histogram()
+
+ggplot(mh, aes(x = IQ, y = Abil)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal()
+```
+
+```{r}
+results <- cor.test(mh$Abil, mh$IQ, method = "pearson", alternative = "two.sided") %>%
+  tidy()
+
+pvalue <- results %>%
+  pull(p.value) %>%
+  round(3)
+
+df <- results %>%
+  pull(parameter)
+
+correlation <- results %>%
+  pull(estimate) %>%
+  round(2)
+```
+
+#### Write up  
+* A pearson correlation found reading ablility and intelligence to be positively correlated with a medium to strong relationship, (r(`r df`) = `r correlation`, p = `r pvalue`). As such we can say that our hypothesis is supported and that there appears to be a relationship between reading ability and IQ in that as reading ability increases so does intelligence.
+
+```{r}
+pairs(mh)
+
+mh_mx <- as.matrix(mh)
+rcorr(mh_mx, type = "pearson")
+```
+
+```{r}
+vaping <- read_csv("VapingData.csv")
+
+glimpse(vaping)
+sum(is.na(vaping$IAT_BLOCK5_Acc))
+head(vaping)
+
+```
+
+```{r}
+vaping2 <-  vaping %>%
+  filter(IAT_BLOCK3_Acc <= 1 & IAT_BLOCK5_Acc <=1) %>%
+  mutate(IAT_average_acc = (IAT_BLOCK3_Acc + IAT_BLOCK5_Acc)/2) %>%
+  filter(IAT_average_acc >= .8) %>%
+  mutate(IAT_RT = IAT_BLOCK5_RT - IAT_BLOCK3_RT)
+
+length(vaping$IAT_BLOCK3_Acc)
+length(vaping$IAT_BLOCK5_Acc)
+
+length(vaping2$IAT_BLOCK3_Acc)
+length(vaping2$IAT_BLOCK5_Acc)
+
+head(vaping2)
+```
+
+```{r}
+descriptives <- vaping2 %>%
+  summarise(n = n(),
+            mean_IAT_ACC = mean(IAT_average_acc),
+            mean_IAT_RT = mean(IAT_RT),
+            mean_VPQ = mean(VapingQuestionnaireScore, na.rm = TRUE)) 
+```
+
+```{r}
+ggplot(vaping2, aes(VapingQuestionnaireScore)) +
+  geom_histogram() +
+  theme_minimal()
+
+ggplot(vaping2, aes(IAT_RT)) +
+  geom_histogram() +
+  theme_minimal()
+
+ggplot(vaping2, aes(x = IAT_RT, y = VapingQuestionnaireScore)) +
+  geom_point() +
+  theme_minimal()
+
+vaping3 <- vaping2 %>%
+  filter(!is.na(VapingQuestionnaireScore)) %>%
+  filter(!is.na(IAT_RT))
+```
+
+```{r}
+vap_results <- cor.test(vaping3$VapingQuestionnaireScore,
+                        vaping3$IAT_RT,
+                        method = "pearson") %>%
+  tidy()
+
+correlation <- vap_results %>%
+  pull(estimate) %>%
+  round(3)
+
+df <- vap_results %>%
+  pull(parameter) 
+
+pvalue <- vap_results %>%
+  pull(p.value) %>%
+  round(3)
+```
+
+#### Write up  
+* Testing the hypothesis that there would be a relationship between implicit and explicit vaping, a pearson correlation found no significant relationship between IAT reaction times (implicit attitude) and answers on a Vaping Questionnaire (explicit attitude), r(`r df`) = `r correlation`, p = `r pvalue`. Overall this suggests that there is no direct relationship between implicit and explicit attitudes when relating to Vaping and as such our hypothesis was not supported; we cannot reject the null hypothesis.
+
+#### Outliers
+```{r}
+mh_IQ <- mh %>%
+  select(IQ)
+
+mh_IQ_z <- mh_IQ %>%
+  mutate(z_scores = (IQ - mean(IQ)) / sd(IQ))
+
+mh_IQ_z %>% filter(abs(z_scores) > 2.5) %>% count() %>% pull(n)
+```
+#### A different approach using a correlation table  
+```{r}
+library(corrr)
+```
+
+```{r}
+mh %>%
+  select(-Participant) %>%
+  correlate(method = "pearson", quiet = TRUE) %>%
+  shave() %>%
+  fashion(decimals = 3, leading_zeros = FALSE)
+```
+
+#### Comparing correlations  
+```{r}
+library(cocor)
+```
+
+```{r}
+compar1 <- cocor.indep.groups()
+```
+

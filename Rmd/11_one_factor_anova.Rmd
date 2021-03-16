@@ -1,0 +1,44 @@
+---
+title: "11_one-factor_ANOVA"
+author: "Nick Schultz"
+date: "3/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+```{r}
+dmx <- tibble(i = rep(1:3, each = 4),
+              j = rep(1:4, times = 3),
+              Yij = c(37, 80, 64, 51, 33, 47, 55, 41, 59, 23, 50, 60))
+
+dmx2 <- dmx %>%
+  mutate(mu = mean(Yij))
+
+dmx3 <- dmx2 %>%
+  group_by(i) %>%
+  mutate(Ai = mean(Yij) - mu) %>%
+  ungroup()
+
+dmx4 <- dmx3 %>%
+  mutate(err = Yij - (mu + Ai))
+```
+
+```{r}
+sstbl <- dmx4 %>%
+  mutate(Yij2 = Yij^2,
+         mu2 = mu^2,
+         Ai2 = Ai^2,
+         err2 = err^2) %>%
+  select(Yij2, mu2, Ai2, err2) %>%
+  summarise(ss_Y = sum(Yij2),
+            ss_mu = sum(mu2),
+            ss_Ai = sum(Ai2),
+            ss_err = sum(err2)) %>%
+  knitr::kable(align = "c", caption = "Sums of Squares for this analysis")
+```
+

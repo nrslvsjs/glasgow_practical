@@ -1,0 +1,49 @@
+---
+title: "8_APES_alpha_power_effectsizes_samplesize"
+author: "Nick Schultz"
+date: "3/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pwr)
+library(purrr)
+library(tidyverse)
+```
+
+```{r}
+pwr.t.test(d = .4,
+           power = .8,
+           sig.level = .05,
+           alternative = "two.sided",
+           type = "two.sample")
+
+n_test <- pwr.t.test(d = .4,
+                     power = .8,
+                     sig.level = .05,
+                     alternative = "two.sided",
+                     type = "two.sample") %>%
+  pluck("n")
+
+n_test %>% ceiling()
+```
+
+```{r}
+sample_size <- pwr.t.test(d = .23,
+                          power = .8,
+                          sig.level = .05,
+                          alternative = "two.sided",
+                          type = "one.sample") %>%
+  pluck("n") %>% ceiling()
+```
+
+```{r}
+cohens <- pwr.t.test(n = 50,
+                     power = .9,
+                     sig.level = .05,
+                     alternative = "two.sided",
+                     type = "two.sample") %>%
+  pluck("d")
+```
+

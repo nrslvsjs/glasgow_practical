@@ -1,0 +1,66 @@
+---
+title: "13_two_factor_ANOVA"
+author: "Nick Schultz"
+date: "3/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r}
+decomp <- tibble(i = rep(1:2, each = 6),
+                 j = rep(1:2, each = 3, times = 2),
+                 k = rep(1:3, times = 4),
+                 Y_ijk = c(74, 65, 77, 70, 74, 66, 67, 67, 64, 78, 78, 84)) %>%
+  mutate(mu = mean(Y_ijk)) %>%
+  group_by(i) %>%
+  mutate(A_i = mean(Y_ijk) - mu) %>%
+  ungroup() %>%
+  group_by(j) %>%
+  mutate(B_j = mean(Y_ijk) - mu) %>%
+  ungroup()
+
+decomp2 <- decomp %>%
+  group_by(i, j) %>%
+  mutate(AB_ij = mean(Y_ijk - mu - A_i -B_j)) %>%
+  mutate(err = Y_ijk - mu - A_i - B_j - AB_ij)
+
+sum((decomp2$B_j)^2)
+sum((decomp2$err)^2)
+
+(sum((decomp2$B_j)^2)) / 1)
+
+(sum((decomp2$err)^2)) / 8
+
+((sum((decomp2$B_j)^2)) / 1) / ((sum((decomp2$err)^2)) / 8)
+
+1 - pf(((sum((decomp2$B_j)^2)) / 1) / ((sum((decomp2$err)^2)) / 8), 1, 8)   
+```
+
+```{r}
+dat <- decomp %>%
+  mutate(A = paste0("A", i),
+         B = paste0("B", j),
+         id = row_number()) %>%
+  select(id, A, B, Y_ijk)
+```
+
+```{r}
+cell_means <- dat %>%
+  group_by(A, B) %>%
+  summarise(m = mean(Y_ijk))
+
+ggplot(cell_means, aes(A, m, group = B, shape = B, color = B)) +
+  geom_point(size = 3) +
+  geom_line()
+```
+
+```{r}
+result <- afex::aov_ez(data = dat, dv = "Y_ijk", id = "id", type = 3, between = c("A", "B"))
+
+result$anova_table
+```
+

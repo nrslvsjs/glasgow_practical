@@ -1,0 +1,103 @@
+---
+title: "Within-Subjects t-tests"
+author: "Nick Schultz"
+date: "3/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tibble)
+library(tidyverse)
+library(broom)
+```
+### Within-Subjects t-test
+
+#### Assumptions of between-subjects t-test:  
+* independence  
+* equal variances  
+* dependent variable is continuous (interval/ratio)  
+* dependent variable normally distributed  
+
+#### Assumptions of within-subjects t-test:  
+* all participants appear in both groups  
+* dependent variable is continuous (interval/ratio)  
+* dependent variable normally distributed  
+
+#### Welch's t-test vs. Student's t-test
+* Welch's does not assume equal variance
+```{r}
+my_data <- tibble(my_iv = rep(c("A", "B"), each = 20),
+                  my_dv = c(rnorm(n = 20, mean = 0, sd = 1),
+                                  rnorm(20, 0, 1)))
+t.test(my_dv ~ my_iv, data = my_data, var.equal = TRUE)
+t.test(my_dv ~ my_iv, data = my_data, var.equal = FALSE)
+```
+
+### Task 2
+```{r}
+ratings <- read_csv("GuiltJudgements.csv")
+```
+```{r}
+lates <-  ratings %>%
+  filter(Evidence == "Late") %>%
+  select(Participant, Evidence, "12", "13") %>%
+  rename(Twelve = "12", Thirteen = "13") %>%
+  gather(Twelve, Thirteen, key = "Timepoint", value = "GuiltRating")
+```
+
+```{r}
+ggplot(lates, aes(GuiltRating)) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ Timepoint) +
+  xlab("GuiltRating") +
+  theme_bw()
+
+ggplot(lates, aes(Timepoint, GuiltRating)) +
+  geom_boxplot()
+
+ggplot(lates, aes(Timepoint, GuiltRating)) +
+  geom_violin(aes(fill = Timepoint), alpha = .2) +
+  geom_boxplot(width = .5) +
+  geom_jitter(aes(fill = Timepoint), width = .1, alpha = .2)
+  scale_y_continuous(breaks = c(1:9)) +
+  coord_cartesian(ylim = c(1, 9), expand = TRUE) +
+  theme_bw()
+  
+  lates %>%
+    spread(Timepoint, GuiltRating) %>%
+    mutate(diff = Thirteen - Twelve) %>%
+    ggplot(aes(Evidence, diff)) +
+    geom_violin() +
+    geom_boxplot(fill = "red",
+                 width = .5,
+                 alpha = .1,
+                 outlier.color = "red") +
+    geom_jitter(color = "blue",
+                width = .1,
+                shape = 4) +
+    theme_classic()
+```
+
+```{r}
+descriptives <- lates %>%
+  group_by(Timepoint) %>%
+  summarise(n = n(),
+            mean = mean(GuiltRating),
+            sd = sd(GuiltRating),
+            se = sd / sqrt(n),
+            LowerCI = mean - 1.96 * se,
+            UpperCI = mean + 1.96 * se)
+
+  knitr::kable(descriptives, align = "c", caption = "Descriptives data for current study")
+
+ggplot(descriptives, aes(Timepoint, mean, fill = Timepoint)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = LowerCI, ymax = UpperCI),
+                position = "dodge", width = .15)
+```
+
+```{r}
+t.test(GuiltRating ~ Timepoint, lates, paired = TRUE, alternative  = "two.sided") %>% tidy()
+```
+
