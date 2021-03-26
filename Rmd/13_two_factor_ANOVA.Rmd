@@ -25,17 +25,17 @@ decomp <- tibble(i = rep(1:2, each = 6),
 
 decomp2 <- decomp %>%
   group_by(i, j) %>%
-  mutate(AB_ij = mean(Y_ijk - mu - A_i -B_j)) %>%
+  mutate(AB_ij = mean(Y_ijk) - mu - A_i -B_j) %>%
   mutate(err = Y_ijk - mu - A_i - B_j - AB_ij)
 
 sum((decomp2$B_j)^2)
 sum((decomp2$err)^2)
 
-(sum((decomp2$B_j)^2)) / 1)
+(sum(decomp2$B_j)^2) / 1)
 
-(sum((decomp2$err)^2)) / 8
+(sum(decomp2$err)^2) / 8
 
-((sum((decomp2$B_j)^2)) / 1) / ((sum((decomp2$err)^2)) / 8)
+(sum(decomp2$B_j)^2) / 1) / (sum(decomp2$err)^2) / 8)
 
 1 - pf(((sum((decomp2$B_j)^2)) / 1) / ((sum((decomp2$err)^2)) / 8), 1, 8)   
 ```

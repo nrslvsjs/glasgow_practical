@@ -1,0 +1,27 @@
+---
+title: "14_regression"
+author: "Nick Schultz"
+date: "3/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(broom)
+library(tidyverse)
+
+ratings <- read_csv("data/14-s02/inclass/voice_ratings.csv")
+
+acoustics <- read_csv("data/14-s02/inclass/voice_acoustics.csv")
+```
+```{r}
+ratings_tidy <-  pivot_longer(data = ratings, names_to = "participant", values_to = "rating", cols = "P1":"P28")
+```
+
+```{r}
+ratings_mean <-  ratings_tidy %>%
+  group_by(VoiceID) %>%
+  summarise(mean_rating = mean(rating))
+```
+
